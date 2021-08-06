@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Licenses{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    {% if user.licenses|length == 0 %}
+        <h3>You have no licenses</h3>
+    {% endif %}
+
+    <ul>
+        {% for i in user.licenses %}
+            <li>{{ loop.index }}. &nbsp;<b>Get Key:</b> {{ i.getKey }}  &nbsp;&nbsp; <b>Keys:</b> {{ i.keys|length }}  &nbsp;&nbsp; <b>Expires on:</b> {{ i.expiryDate }}</li>
+            <form  method="POST" action="{{ url_for('viewLicense') }}">
+                <input id="License" name="License" type="hidden" value="{{ i.getKey }}">
+                <input type="submit" name="View" value="View">
+                <input type="submit" name="Renew" value="Renew">
+            </form>
+        {% endfor %}
+    </ul>
+{% endblock %}

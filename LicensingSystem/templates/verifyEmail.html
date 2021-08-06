@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Verify Email{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <h3>To activate your account, we have sent a verification email. If you have not received the email, click the link below.</h3>
+    <a href="{{ url_for('verifyEmail') }}">Resend email</a>
+{% endblock %}
