@@ -126,6 +126,12 @@ def createAdmin(email,phone,password,name):
     db.session.add(adminUser)
     db.session.commit()
 
+def createActiveUser(email,phone,password,name):
+    pw_hash = bcrypt.generate_password_hash(password)
+    user = User(email = email, phoneNo = phone, name = name, password = pw_hash, active = True)
+    db.session.add(user)
+    db.session.commit()
+
 
 #Background tasks
 @scheduler.task('cron', id='do_expiryCheck', day='*')
@@ -209,10 +215,10 @@ def login():
                 login_user(user, remember=form.rememberMe.data)
                 flash('Logged in successfully.')
                 
-                if not is_safe_url(session['next']):
-                    return abort(400)
-
                 try:
+                    if not is_safe_url(session['next']):
+                        return abort(400)
+
                     return redirect(session.pop('next'))
                 except:
                     return redirect(url_for("home"))
@@ -295,7 +301,7 @@ def logout():
 
 @app.route("/verifyEmail", methods=["GET"])
 def verifyEmail():
-    user = User.query.get(session['email'])
+    user = User.query.filter_by(email=session['email']).first()
     msg = Message(subject="Verify Email",
               recipients=[user.email],
               html = "<a href=" + request.url_root + 'activate/' + user.userKey + ">Click here</a>")
@@ -419,7 +425,7 @@ def users():
 
     if "Remove" in request.form:
         s = request.form.get('User')
-        u = User.query.get(s)
+        u = User.query.filter_by(s).first()
         db.session.delete(u)
         db.session.commit()
         flash("Successfully removed User")
@@ -444,7 +450,7 @@ def allLicenses():
 @login_required
 @admin
 def manageUser(email):
-    selected = User.query.get(email)
+    selected = User.query.filter_by(email=email).first()
     form = MakeLicenseForm()
 
     if "Remove" in request.form:
