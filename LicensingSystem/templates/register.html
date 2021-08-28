@@ -46,7 +46,7 @@
         {{ form.password.label }} {{ form.password(size=20) }}
         {{ form.phoneNumber.label }} {{ form.phoneNumber(size=20) }}
 
-        {% if user and user.admin %}
+        {% if user and user.superadmin %}
             {{ form.admin.label }} {{ form.admin }}
         {% endif %}
 

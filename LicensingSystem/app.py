@@ -1,7 +1,7 @@
 from flask import *
 from dateutil.relativedelta import relativedelta
 from flask_apscheduler import APScheduler
-from flask_login.utils import fresh_login_required, login_fresh
+from flask_login.utils import _secret_key, fresh_login_required, login_fresh
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_required, logout_user, login_user, current_user
 from flask_bcrypt import Bcrypt
@@ -123,6 +123,12 @@ def admin(func):
 def createAdmin(email,phone,password,name):
     pw_hash = bcrypt.generate_password_hash(password)
     adminUser = User(email = email, phoneNo = phone, name = name, password = pw_hash, admin = True, active = True)
+    db.session.add(adminUser)
+    db.session.commit()
+
+def createSuperAdmin(email,phone,password,name):
+    pw_hash = bcrypt.generate_password_hash(password)
+    adminUser = User(email = email, phoneNo = phone, name = name, password = pw_hash, admin = True, superadmin=True, active = True)
     db.session.add(adminUser)
     db.session.commit()
 
@@ -267,6 +273,8 @@ def change():
     form = ChangeForm()
     if form.validate_on_submit():
         if form.email.data != '':
+            oldAccount = {"id":current_user.id, 'email':current_user.email}
+            oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
             current_user.email = form.email.data
             
         if form.name.data != '':
@@ -276,6 +284,10 @@ def change():
             current_user.phoneNo = form.phoneNumber.data
 
         try:
+            msg = Message(subject="Verify Email",
+              recipients=[oldAccount['email']],
+              body = "Your account email has been changed. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle)
+            mail.send(msg)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
@@ -304,7 +316,7 @@ def verifyEmail():
     user = User.query.filter_by(email=session['email']).first()
     msg = Message(subject="Verify Email",
               recipients=[user.email],
-              html = "<a href=" + request.url_root + 'activate/' + user.userKey + ">Click here</a>")
+              html = "<a href=" + url_for('activate',userKey=user.userKey) + ">Click here</a>")
     mail.send(msg)
     return render_template("verifyEmail.html")
 
@@ -334,6 +346,7 @@ def purchase():
 @login_required
 def renew(getKey):
     l = License.query.get(getKey)
+
     if not l or (l.owner != current_user and not current_user.admin):
         flash("You do not own this license or it does not exist")
         return redirect(url_for("home"))
@@ -341,13 +354,24 @@ def renew(getKey):
     form = MakeLicenseForm()
     if form.validate_on_submit():
         try:
-            l.renew(years = form.years.data, months = form.months.data, days = form.days.data)
-            db.session.commit()
-            msg = Message(subject="Your Vayu license has been renewed",
-              recipients=[l.owner.email],
-              body = "Your Vayu registration key = " + getKey)
-            mail.send(msg)
-            flash("Successfully renewed license")
+            if 'Renew' in request.form:
+                l.renew(years = form.years.data, months = form.months.data, days = form.days.data)
+                db.session.commit()
+                msg = Message(subject="Your Vayu license has been renewed",
+                recipients=[l.owner.email],
+                body = "Your Vayu registration key = " + getKey)
+                mail.send(msg)
+                flash("Successfully renewed license")
+
+            if 'Reset' in request.form:
+                l.resetExpiry(years = form.years.data, months = form.months.data, days = form.days.data)
+                db.session.commit()
+                msg = Message(subject="Your Vayu license has had its expiry reset",
+                recipients=[l.owner.email],
+                body = "Your Vayu registration key = " + getKey)
+                mail.send(msg)
+                flash("Successfully reset license expiry")
+
             if current_user.admin:
                 return redirect(url_for("manageUser", email=session['email']))
 
@@ -380,10 +404,14 @@ def viewLicense():
 def activate(userKey):
     user = User.query.filter_by(userKey = userKey).first()
     if not user:
-        flash("Verification expired, email resent")
-        session['email'] = user.email
-        user.generateNewToken()
-        return redirect(url_for("verifyEmail"))
+        flash("Verification expired")
+        try:
+            session['email'] = user.email
+            user.generateNewToken()
+            return redirect(url_for("verifyEmail"))
+        except:
+            flash("Can't set email try logging in")
+            return redirect(url_for('login'))
 
     user.active = True
     user.generateNewToken()
@@ -425,7 +453,7 @@ def users():
 
     if "Remove" in request.form:
         s = request.form.get('User')
-        u = User.query.filter_by(s).first()
+        u = User.query.filter_by(email = s).first()
         db.session.delete(u)
         db.session.commit()
         flash("Successfully removed User")
@@ -541,7 +569,10 @@ def settings():
 @app.route('/verify', methods=["POST"])
 def verify():
     machineID = request.form.get("machineid")
-    ip = request.remote_addr
+    try:
+        ip = request.environ['HTTP_X_FORWARDED_FOR']
+    except:
+        ip = request.environ['REMOTE_ADDR']
 
     keys = Key.query.all()
     for i in keys:

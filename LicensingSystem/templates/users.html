@@ -14,11 +14,11 @@
     </form>
 
     {% for i in users %}
-        <li><b>Name:</b> {{ i.name }}  &nbsp;&nbsp; <b>Email:</b> {{ i.email }}  &nbsp;&nbsp; <b>Licenses:</b> {{ i.licenses|length }}</li>
+        <li> {% if i.superadmin %}<b style="color: blue;">SUPERADMIN</b>{% endif %} {% if i.admin and not i.superadmin %}<b style="color: red;">ADMIN</b>{% endif %} &nbsp; <b>Name:</b> {{ i.name }}  &nbsp;&nbsp; <b>Email:</b> {{ i.email }}  &nbsp;&nbsp; <b>Licenses:</b> {{ i.licenses|length }}  &nbsp;&nbsp; <b>Active:</b> {{ i.active }}</li>
         <form  method="POST" action="{{ url_for('users') }}">
           <input id="User" name="User" type="hidden" value="{{ i.email }}">
           <input type="submit" name="View" value="View">
-          <input type="submit" name="Remove" value="Remove">
+          {% if not i.admin or user.superadmin %}<input type="submit" name="Remove" value="Remove">{% endif %}
         </form>
     {% endfor %}
 {% endblock %}

@@ -13,6 +13,9 @@
         {{ form.days.label }} {{ form.days }}
         <div hidden>{{ form.keys.label }} {{ form.keys }}</div>
 
-        <input type="submit" value="Renew">
+        <input type="submit" name="Renew" value="Renew">
+        {% if user.admin %}
+          <input type="submit" name="Reset" value="Reset">
+        {% endif %}
     </form>
 {% endblock %}

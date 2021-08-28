@@ -14,7 +14,9 @@ class User(db.Model):
     authenticated = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=False)
     userKey = db.Column(db.String(80), default=createUUID, nullable=False)
+    pickleKey = db.Column(db.String(80), default=createUUID, nullable=False)
     admin = db.Column(db.Boolean, default=False)
+    superadmin = db.Column(db.Boolean, default=False)
     licenses = db.relationship('License', backref='owner', cascade="all, delete-orphan")
 
     def addLicense(self, amount, **kwargs):

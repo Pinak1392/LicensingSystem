@@ -29,7 +29,7 @@
 
     <h3>License keys:</h3>
     {% for i in keys %}
-        <li>{{ loop.index }}. &nbsp;<b>Owner:</b> {{ i.alias }}  &nbsp;&nbsp; <b>In use:</b> {{ i.inUse }}</li>
+        <li>{{ loop.index }}. &nbsp;<b>Owner:</b> {{ i.alias }}  &nbsp;&nbsp; <b>In use:</b> {{ i.inUse }} &nbsp;&nbsp; <b>Access amount:</b> {{ i.accessAmount }}  &nbsp;&nbsp; <b>Last access:</b> {{ i.lastAccess }}   &nbsp;&nbsp; <b>IP:</b> {{ i.lastIP }}</li>
         <form  method="POST" action="{{ url_for('manageLicense', getKey=selectedLicense.getKey) }}">
             <input id="Key" name="Key" type="hidden" value="{{ i.id }}">
             {% if user.admin %}
