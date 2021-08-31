@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Renew License: {{ getKey }}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="POST" action="{{ url_for('renew', getKey=getKey) }}">
+
+        {{ form.hidden_tag() }}
+        {{ form.years.label }} {{ form.years }}
+        {{ form.months.label }} {{ form.months }}
+        {{ form.days.label }} {{ form.days }}
+        <div hidden>{{ form.keys.label }} {{ form.keys }}</div>
+
+        <input type="submit" name="Renew" value="Renew">
+        {% if user.admin %}
+          <input type="submit" name="Reset" value="Reset">
+        {% endif %}
+    </form>
+{% endblock %}
