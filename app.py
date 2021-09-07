@@ -308,7 +308,7 @@ def change():
         if form.email.data != '':
             #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
             #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":current_user.id, 'email':current_user.email}
+            oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
             oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
             current_user.email = form.email.data
 
