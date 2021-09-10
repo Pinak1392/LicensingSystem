@@ -337,6 +337,53 @@ def change():
     return render_template("change.html", form=form, user=current_user)
 
 
+#The endpoint in charge of admins changing user info
+@app.route("/adminchange/<email>", methods=["GET", "POST"])
+@admin
+def adminchange(email):
+    form = ChangeForm()
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash("No such user exists")
+        return redirect('users')
+
+    if user.admin and not current_user.superadmin:
+        flash("Can't edit admin data")
+        return redirect('users')
+
+    if form.validate_on_submit():
+        #Only change out info with inputed data. All others will be unchanged
+        if form.email.data != '':
+            #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
+            #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
+            oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
+            oldAccPickle = encrypt(user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
+            user.email = form.email.data
+
+            #Send old email a warning about the email change
+            msg = Message(subject="Verify Email",
+              recipients=[oldAccount['email']],
+              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(user.id))
+            mail.send(msg)
+            
+        if form.name.data != '':
+            user.name = form.name.data
+            
+        if form.phoneNumber.data != '':
+            user.phoneNo = form.phoneNumber.data
+
+        try:
+            db.session.commit()
+            flash("Information successfully changed")
+            return redirect(url_for('adminchange', email=user.email))
+        except Exception as e:
+            db.session.rollback()
+            db.session.flush()
+            flash("Email or phone number already taken")
+
+    return render_template("adminchange.html", form=form, user=current_user, selected=user)
+
+
 #Simple logout route
 @app.route("/logout", methods=["GET"])
 @login_required
@@ -549,6 +596,11 @@ def users():
         db.session.delete(u)
         db.session.commit()
         flash("Successfully removed User")
+
+    #Send to a form to change user details if change was clicked
+    if "Change" in request.form:
+        s = request.form.get('User')
+        return redirect(url_for('adminchange', email=s))
 
     #View user if view is clicked
     if "View" in request.form:
