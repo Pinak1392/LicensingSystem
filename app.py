@@ -180,8 +180,8 @@ def pruner():
 def nosleep():
     requests.get('https://licenseprototype.herokuapp.com/')
 
-#Start background tasks
-scheduler.start()
+#Start background tasks (deactivated)
+#scheduler.start()
     
 
 
@@ -315,7 +315,7 @@ def change():
             #Send old email a warning about the email change
             msg = Message(subject="Verify Email",
               recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle)
+              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
             mail.send(msg)
             
         if form.name.data != '':
