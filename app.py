@@ -180,8 +180,8 @@ def pruner():
 def nosleep():
     requests.get('https://licenseprototype.herokuapp.com/')
 
-#Start background tasks
-scheduler.start()
+#Start background tasks (deactivated)
+#scheduler.start()
     
 
 
@@ -308,14 +308,14 @@ def change():
         if form.email.data != '':
             #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
             #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":current_user.id, 'email':current_user.email}
+            oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
             oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
             current_user.email = form.email.data
 
             #Send old email a warning about the email change
             msg = Message(subject="Verify Email",
               recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle)
+              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
             mail.send(msg)
             
         if form.name.data != '':
