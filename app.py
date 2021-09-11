@@ -357,7 +357,7 @@ def adminchange(email):
             #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
             #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
             oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
-            oldAccPickle = encrypt(user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
+            oldAccPickle = str(encrypt(createKey(user.pickleKey), str(encrypt(createKey(app.secret_key), json.dumps(oldAccount)))))
             user.email = form.email.data
 
             #Send old email a warning about the email change
