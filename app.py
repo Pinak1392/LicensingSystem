@@ -304,32 +304,32 @@ def register():
 def change():
     form = ChangeForm()
     if form.validate_on_submit():
-        #Only change out info with inputed data. All others will be unchanged
-        if form.email.data != '':
-            #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
-            #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
-            oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
-            current_user.email = form.email.data
-
-            #Send old email a warning about the email change
-            msg = Message(subject="Verify Email",
-              recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
-            mail.send(msg)
-            
-        if form.name.data != '':
-            current_user.name = form.name.data
-            
-        if form.phoneNumber.data != '':
-            current_user.phoneNo = form.phoneNumber.data
-
         try:
+            #Only change out info with inputed data. All others will be unchanged
+            if form.email.data != '':
+                #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
+                #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
+                oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
+                oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
+                current_user.email = form.email.data
+
+                #Send old email a warning about the email change
+                msg = Message(subject="Verify Email",
+                recipients=[oldAccount['email']],
+                body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
+                mail.send(msg)
+                
+            if form.name.data != '':
+                current_user.name = form.name.data
+                
+            if form.phoneNumber.data != '':
+                current_user.phoneNo = form.phoneNumber.data
+        
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             db.session.flush()
-            flash("Email or phone number already taken")
+            flash("Email or phone number already taken, invalid or defunct")
 
         flash("Information successfully changed")
             
@@ -352,34 +352,37 @@ def adminchange(email):
         return redirect('users')
 
     if form.validate_on_submit():
-        #Only change out info with inputed data. All others will be unchanged
-        if form.email.data != '':
-            #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
-            #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
-            oldAccPickle = str(encrypt(createKey(user.pickleKey), str(encrypt(createKey(app.secret_key), json.dumps(oldAccount)))))
-            user.email = form.email.data
-
-            #Send old email a warning about the email change
-            msg = Message(subject="Verify Email",
-              recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(user.id))
-            mail.send(msg)
-            
-        if form.name.data != '':
-            user.name = form.name.data
-            
-        if form.phoneNumber.data != '':
-            user.phoneNo = form.phoneNumber.data
-
         try:
+            #Only change out info with inputed data. All others will be unchanged
+            if form.email.data != '':
+                #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
+                #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
+                oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
+                oldAccPickle = str(encrypt(createKey(user.pickleKey), str(encrypt(createKey(app.secret_key), json.dumps(oldAccount)))))
+                user.email = form.email.data
+
+                #Send old email a warning about the email change
+                msg = Message(subject="Verify Email",
+                recipients=[oldAccount['email']],
+                body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(user.id))
+                mail.send(msg)
+                
+            if form.name.data != '':
+                user.name = form.name.data
+                
+            if form.phoneNumber.data != '':
+                user.phoneNo = form.phoneNumber.data
+
+        
             db.session.commit()
             flash("Information successfully changed")
             return redirect(url_for('adminchange', email=user.email))
+        
         except Exception as e:
             db.session.rollback()
             db.session.flush()
-            flash("Email or phone number already taken")
+            print(e)
+            flash("Email or phone number already taken. Additionally, the old email could also be defunct")
 
     return render_template("adminchange.html", form=form, user=current_user, selected=user)
 
@@ -772,6 +775,13 @@ def setupkey():
     getKey = request.form.get("regkey")
     alias = request.form.get("hostname")
 
+    try:
+        #Get ip info
+        ip = request.environ['HTTP_X_FORWARDED_FOR']
+    except:
+        #Get ip info
+        ip = request.environ['REMOTE_ADDR']
+
     #Get the license that is refered to in post request
     l = License.query.get(getKey)
 
@@ -782,6 +792,12 @@ def setupkey():
                 key.inUse = True
                 key.machineId = machineId
                 key.alias = alias
+                #Save ip
+                key.lastIP = ip
+                #Save last access
+                key.lastAccess = datetime.now()
+                #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
+                key.accessAmount += 1
                 db.session.commit()
                 return "True"
 
