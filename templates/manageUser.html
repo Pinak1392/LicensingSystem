@@ -18,7 +18,10 @@
     </form>
 
     <h3>User licenses:</h3>
-    {% for i in selectedUser.licenses %}
+    <div class="list">
+    {% for i in selectedUser.licenses[:items] %}
+        {% if loop.index != items %}
+        <div class="item">
         <li>{{ loop.index }}. &nbsp;<b>Get Key:</b> {{ i.getKey }}  &nbsp;&nbsp; <b>Keys:</b> {{ i.keys|length }}  &nbsp;&nbsp; <b>Expires on:</b> <span class='localtime'>{{ i.expiryDate }}</span></li>
         <form  method="POST" action="{{ url_for('manageUser', email=selectedUser.email) }}">
             <input id="License" name="License" type="hidden" value="{{ i.getKey }}">
@@ -28,5 +31,21 @@
             <input type="submit" name="Reset registration key" value="Reset registration key">
             <input type="submit" name="Reset all keys" value="Reset all keys">
         </form>
+        </div>
+        {% endif %}
     {% endfor %}
+    </div>
+
+    {% if selectedUser.licenses|length == items %}
+    <button class="loadMore">Load more</button>
+    {% endif %}
+
+    <script>
+        $(".loadMore").click(function(){
+            $(".content").load("{{ url_for('manageUser', email=selectedUser.email) + '?items=' + (items + 50)|string}}" + " .content",
+            function () {
+            $(".content").html($(".content > .content").html());
+            });
+        });
+    </script>
 {% endblock %}

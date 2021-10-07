@@ -88,6 +88,18 @@ def before_request():
         except:
             pass
     
+@app.context_processor
+def override_url_for():
+    return dict(url_for=dated_url_for)
+
+def dated_url_for(endpoint, **values):
+    if endpoint == 'static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.root_path,
+                                 endpoint, filename)
+            values['q'] = int(os.stat(file_path).st_mtime)
+    return url_for(endpoint, **values)
 
 
 #Check url
@@ -497,6 +509,11 @@ def renew(getKey):
 @app.route("/viewLicense", methods=["GET", "POST"])
 @login_required
 def viewLicense():
+    
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
+
     #This takes you to the screen where you can manage the keys
     if "View" in request.form:
         s = request.form.get('License')
@@ -525,7 +542,7 @@ def viewLicense():
         db.session.commit()
         flash("All keys have been reset")
 
-    return render_template("licenses.html", user=current_user)
+    return render_template("licenses.html", user=current_user, items=items)
 
 
 #This endpoint activates the user
@@ -591,6 +608,9 @@ def forgot(userKey):
 @admin
 def users():
     form = SearchForm()
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
 
     #Delete user if remove was clicked
     if "Remove" in request.form:
@@ -613,7 +633,7 @@ def users():
     #Search function
     u = User.query.filter(User.name.ilike(f"%{form.search.data}%") | User.email.ilike(f"%{form.search.data}%")).all()
 
-    return render_template("users.html", users=u, user=current_user, form=form)
+    return render_template("users.html", users=u[:items], user=current_user, form=form, items=items)
 
 
 #Defunct route, simply allows you to view all licenses. It isn't useful anymore, but it does still work.
@@ -631,6 +651,11 @@ def allLicenses():
 def manageUser(email):
     #Get user
     selected = User.query.filter_by(email=email).first()
+
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
+
     #Form to create a license
     form = MakeLicenseForm()
 
@@ -681,7 +706,7 @@ def manageUser(email):
         return redirect(url_for("manageUser", email=email))
 
     #Selected user is the user that you are managing
-    return render_template("manageUser.html", selectedUser=selected, user=current_user, form=form)
+    return render_template("manageUser.html", selectedUser=selected, user=current_user, form=form, items=items)
 
 
 #Manage license
@@ -692,6 +717,10 @@ def manageLicense(getKey):
     selected = License.query.get(getKey)
     form = MakeLicenseForm()
     searchform = SearchForm()
+
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
 
     #Check if current user owns license or is an admin
     if selected not in current_user.licenses and not current_user.admin:
@@ -724,7 +753,7 @@ def manageLicense(getKey):
     #Search keys based on what person/computer is using them
     keys = Key.query.filter(Key.alias.ilike(f"%{searchform.search.data}%") & (Key.owner_id == selected.getKey)).all()
 
-    return render_template("manageLicense.html", selectedLicense=selected, user=current_user, form=form, searchform=searchform, keys=keys)
+    return render_template("manageLicense.html", selectedLicense=selected, user=current_user, form=form, searchform=searchform, keys=keys, items=items)
 
 
 #Settings page
