@@ -88,6 +88,18 @@ def before_request():
         except:
             pass
     
+@app.context_processor
+def override_url_for():
+    return dict(url_for=dated_url_for)
+
+def dated_url_for(endpoint, **values):
+    if endpoint == 'static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.root_path,
+                                 endpoint, filename)
+            values['q'] = int(os.stat(file_path).st_mtime)
+    return url_for(endpoint, **values)
 
 
 #Check url
@@ -304,32 +316,32 @@ def register():
 def change():
     form = ChangeForm()
     if form.validate_on_submit():
-        #Only change out info with inputed data. All others will be unchanged
-        if form.email.data != '':
-            #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
-            #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
-            oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
-            current_user.email = form.email.data
-
-            #Send old email a warning about the email change
-            msg = Message(subject="Verify Email",
-              recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
-            mail.send(msg)
-            
-        if form.name.data != '':
-            current_user.name = form.name.data
-            
-        if form.phoneNumber.data != '':
-            current_user.phoneNo = form.phoneNumber.data
-
         try:
+            #Only change out info with inputed data. All others will be unchanged
+            if form.email.data != '':
+                #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
+                #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
+                oldAccount = {"id":current_user.id, 'email':current_user.email, 'date':str(datetime.now())}
+                oldAccPickle = encrypt(current_user.pickleKey, str(encrypt(app.secret_key, json.dumps(oldAccount))))
+                current_user.email = form.email.data
+
+                #Send old email a warning about the email change
+                msg = Message(subject="Verify Email",
+                recipients=[oldAccount['email']],
+                body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(current_user.id))
+                mail.send(msg)
+                
+            if form.name.data != '':
+                current_user.name = form.name.data
+                
+            if form.phoneNumber.data != '':
+                current_user.phoneNo = form.phoneNumber.data
+        
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             db.session.flush()
-            flash("Email or phone number already taken")
+            flash("Email or phone number already taken, invalid or defunct")
 
         flash("Information successfully changed")
             
@@ -352,34 +364,37 @@ def adminchange(email):
         return redirect('users')
 
     if form.validate_on_submit():
-        #Only change out info with inputed data. All others will be unchanged
-        if form.email.data != '':
-            #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
-            #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
-            oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
-            oldAccPickle = str(encrypt(createKey(user.pickleKey), str(encrypt(createKey(app.secret_key), json.dumps(oldAccount)))))
-            user.email = form.email.data
-
-            #Send old email a warning about the email change
-            msg = Message(subject="Verify Email",
-              recipients=[oldAccount['email']],
-              body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(user.id))
-            mail.send(msg)
-            
-        if form.name.data != '':
-            user.name = form.name.data
-            
-        if form.phoneNumber.data != '':
-            user.phoneNo = form.phoneNumber.data
-
         try:
+            #Only change out info with inputed data. All others will be unchanged
+            if form.email.data != '':
+                #In the case of an email change, create a backup accountID and email dictionary and double encrypt it before sending it to the old email.
+                #This will hopefully mitigate the damage of a hacker changing an email. It also doesn't allow for a user to directly control the database easily.
+                oldAccount = {"id":user.id, 'email':user.email, 'date':str(datetime.now())}
+                oldAccPickle = str(encrypt(createKey(user.pickleKey), str(encrypt(createKey(app.secret_key), json.dumps(oldAccount)))))
+                user.email = form.email.data
+
+                #Send old email a warning about the email change
+                msg = Message(subject="Verify Email",
+                recipients=[oldAccount['email']],
+                body = "Your account email has been changed or a change was attempted. If you have not caused this. Contact us IMMEDIATELY and send us the key below.\n\n" + oldAccPickle + "\n\nAccount reference: " + str(user.id))
+                mail.send(msg)
+                
+            if form.name.data != '':
+                user.name = form.name.data
+                
+            if form.phoneNumber.data != '':
+                user.phoneNo = form.phoneNumber.data
+
+        
             db.session.commit()
             flash("Information successfully changed")
             return redirect(url_for('adminchange', email=user.email))
+        
         except Exception as e:
             db.session.rollback()
             db.session.flush()
-            flash("Email or phone number already taken")
+            print(e)
+            flash("Email or phone number already taken. Additionally, the old email could also be defunct")
 
     return render_template("adminchange.html", form=form, user=current_user, selected=user)
 
@@ -494,6 +509,11 @@ def renew(getKey):
 @app.route("/viewLicense", methods=["GET", "POST"])
 @login_required
 def viewLicense():
+    
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
+
     #This takes you to the screen where you can manage the keys
     if "View" in request.form:
         s = request.form.get('License')
@@ -522,7 +542,7 @@ def viewLicense():
         db.session.commit()
         flash("All keys have been reset")
 
-    return render_template("licenses.html", user=current_user)
+    return render_template("licenses.html", user=current_user, items=items)
 
 
 #This endpoint activates the user
@@ -588,6 +608,9 @@ def forgot(userKey):
 @admin
 def users():
     form = SearchForm()
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
 
     #Delete user if remove was clicked
     if "Remove" in request.form:
@@ -610,7 +633,7 @@ def users():
     #Search function
     u = User.query.filter(User.name.ilike(f"%{form.search.data}%") | User.email.ilike(f"%{form.search.data}%")).all()
 
-    return render_template("users.html", users=u, user=current_user, form=form)
+    return render_template("users.html", users=u[:items], user=current_user, form=form, items=items)
 
 
 #Defunct route, simply allows you to view all licenses. It isn't useful anymore, but it does still work.
@@ -628,6 +651,11 @@ def allLicenses():
 def manageUser(email):
     #Get user
     selected = User.query.filter_by(email=email).first()
+
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
+
     #Form to create a license
     form = MakeLicenseForm()
 
@@ -678,7 +706,7 @@ def manageUser(email):
         return redirect(url_for("manageUser", email=email))
 
     #Selected user is the user that you are managing
-    return render_template("manageUser.html", selectedUser=selected, user=current_user, form=form)
+    return render_template("manageUser.html", selectedUser=selected, user=current_user, form=form, items=items)
 
 
 #Manage license
@@ -689,6 +717,10 @@ def manageLicense(getKey):
     selected = License.query.get(getKey)
     form = MakeLicenseForm()
     searchform = SearchForm()
+
+    items = 50
+    if 'items' in request.args:
+        items = int(request.args.get('items'))
 
     #Check if current user owns license or is an admin
     if selected not in current_user.licenses and not current_user.admin:
@@ -721,7 +753,7 @@ def manageLicense(getKey):
     #Search keys based on what person/computer is using them
     keys = Key.query.filter(Key.alias.ilike(f"%{searchform.search.data}%") & (Key.owner_id == selected.getKey)).all()
 
-    return render_template("manageLicense.html", selectedLicense=selected, user=current_user, form=form, searchform=searchform, keys=keys)
+    return render_template("manageLicense.html", selectedLicense=selected, user=current_user, form=form, searchform=searchform, keys=keys, items=items)
 
 
 #Settings page
@@ -772,6 +804,13 @@ def setupkey():
     getKey = request.form.get("regkey")
     alias = request.form.get("hostname")
 
+    try:
+        #Get ip info
+        ip = request.environ['HTTP_X_FORWARDED_FOR']
+    except:
+        #Get ip info
+        ip = request.environ['REMOTE_ADDR']
+
     #Get the license that is refered to in post request
     l = License.query.get(getKey)
 
@@ -782,6 +821,12 @@ def setupkey():
                 key.inUse = True
                 key.machineId = machineId
                 key.alias = alias
+                #Save ip
+                key.lastIP = ip
+                #Save last access
+                key.lastAccess = datetime.now()
+                #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
+                key.accessAmount += 1
                 db.session.commit()
                 return "True"
 

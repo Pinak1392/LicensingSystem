@@ -4,54 +4,60 @@
   <title>{% block title %}{% endblock %}</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script
+			  src="https://code.jquery.com/jquery-3.6.0.js"
+			  integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+			  crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </head>
 
-<nav class="navbar navbar-inverse">
-  <div class="container-fluid">
-    <a style="color: white;" href="{{ url_for('home') }}" class="navbar-header"><h1>Logo</h1></a>
-    <ul class="navcontentcontainer nav navbar-nav" style="float: right; margin-top: 1%;">
-      {% if user and user.is_authenticated %}
-        <li><h3 style="color: white; margin-left: -4%; margin-top: 10%; width: 100%;">Hello {{ user.name }}</h3></li>
-
-        {% if user.admin %}
-          <li><a href="{{ url_for('users') }}">Users</a></li>
-          <li><a href="{{ url_for('register') }}">Create User</a></li>
+<body>
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <a style="color: white;" href="{{ url_for('home') }}" class="navbar-header"><h1>Logo</h1></a>
+      <ul class="navcontentcontainer nav navbar-nav" style="float: right; margin-top: 1%;">
+        {% if user and user.is_authenticated %}
+          <li><h3 style="color: white; margin-left: -4%; margin-top: 10%; width: 100%;">Hello {{ user.name }}</h3></li>
+  
+          {% if user.admin %}
+            <li><a href="{{ url_for('users') }}">Users</a></li>
+            <li><a href="{{ url_for('register') }}">Create User</a></li>
+          {% else %}
+            <li><a href="{{ url_for('purchase') }}">Purchase License</a></li>
+            <li><a href="{{ url_for('viewLicense') }}">Licenses</a></li>
+          {% endif %}
+  
+          <li><a href="{{ url_for('settings') }}">Settings</a></li>
+          <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+        
         {% else %}
-          <li><a href="{{ url_for('purchase') }}">Purchase License</a></li>
-          <li><a href="{{ url_for('viewLicense') }}">Licenses</a></li>
+          <li><a href="{{ url_for('register') }}">Register</a></li>
+          <li><a href="{{ url_for('login') }}">Log In</a></li>
         {% endif %}
-
-        <li><a href="{{ url_for('settings') }}">Settings</a></li>
-        <li><a href="{{ url_for('logout') }}">Log Out</a></li>
-      
-      {% else %}
-        <li><a href="{{ url_for('register') }}">Register</a></li>
-        <li><a href="{{ url_for('login') }}">Log In</a></li>
-      {% endif %}
-    </ul>
-  </div>
-</nav>
-
-<header>
-  {% block header %}{% endblock %}
-</header>
-
-{% for message in get_flashed_messages() %}
-  <div class="flash">{{ message }}</div>
-{% endfor %}
-
-<section class="content">
-  {% block content %}{% endblock %}
-
-  <script>
-    var elements = document.getElementsByClassName('localtime');
-    for(var i = 0; i < elements.length; i++){
-      var inner = elements[i].innerHTML
-      var parts = inner.split(' ').length
-      var time = new Date(inner.replaceAll('-','/') + ' UTC');
-      var newtime = time.toString().split(' ').splice(0, 3 + parts)
-      elements[i].innerHTML = newtime.join(' ');
-    }
-  </script>
-</section>
+      </ul>
+    </div>
+  </nav>
+  
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+  
+  <section class="content">
+    {% block content %}{% endblock %}
+  
+    <script>
+      var elements = document.getElementsByClassName('localtime');
+      for(var i = 0; i < elements.length; i++){
+        var inner = elements[i].innerHTML
+        var parts = inner.split(' ').length
+        var time = new Date(inner.replaceAll('-','/') + ' UTC');
+        var newtime = time.toString().split(' ').splice(0, 3 + parts)
+        elements[i].innerHTML = newtime.join(' ');
+      }
+    </script>
+  </section>
+</body>

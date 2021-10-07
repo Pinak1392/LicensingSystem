@@ -28,7 +28,10 @@
       </form>
 
     <h3>License keys:</h3>
+    <div class="list">
     {% for i in keys %}
+        {% if loop.index != items %}
+        <div class="item">
         <li>{{ loop.index }}. &nbsp;<b>Owner:</b> {{ i.alias }}  &nbsp;&nbsp; <b>In use:</b> {{ i.inUse }} &nbsp;&nbsp; <b>Access amount:</b> {{ i.accessAmount }}  &nbsp;&nbsp; <b>Last access:</b> {% if i.lastAccess %}<span class='localtime'>{{ i.lastAccess.replace(microsecond=0) }}</span>   &nbsp;&nbsp;{% endif %} <b>IP:</b> {{ i.lastIP }}</li>
         <form  method="POST" action="{{ url_for('manageLicense', getKey=selectedLicense.getKey) }}">
             <input id="Key" name="Key" type="hidden" value="{{ i.id }}">
@@ -37,5 +40,21 @@
             {% endif %}
             <input type="submit" name="Reset" value="Reset">
         </form>
+        </div>
+        {% endif %}
     {% endfor %}
+    </div>
+
+    {% if keys|length == items %}
+    <button class="loadMore">Load more</button>
+    {% endif %}
+
+    <script>
+        $(".loadMore").click(function(){
+            $(".content").load("{{ url_for('manageLicense', getKey=selectedLicense.getKey) + '?items=' + (items + 50)|string}}" + " .content",
+            function () {
+            $(".content").html($(".content > .content").html());
+            });
+        });
+    </script>
 {% endblock %}

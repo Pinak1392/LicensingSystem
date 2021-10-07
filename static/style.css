@@ -1,2 +1,22 @@
+.content,header {
+    margin-left: 1%;
+    width: 98%;
+}
 
-  
+.list>.item{
+    list-style-type: none;
+    margin-bottom: 0.75%;
+    margin-top: 0.25%;
+}
+
+.list{
+    height: 100%;
+}
+
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #333;
+    background-color: #fff;
+}
