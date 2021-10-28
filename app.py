@@ -775,26 +775,33 @@ def verify():
         ip = request.environ['REMOTE_ADDR']
 
     keys = Key.query.all()
-    for i in keys:
-        #Check if key machineID is similar enough to received machineID. Accept it if it is.
-        #I only check for similarity instead of congruency because a person may change a part of their machine.
-        key = i.checkSimilar(machineID)
-        if key:
-            d = createDateTime(i.owner.expiryDate)
-            #Save ip
-            i.lastIP = ip
-            #Save last access
-            i.lastAccess = datetime.now()
-            #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
-            i.accessAmount += 1
-            db.session.commit()
-            #Check for expiry
-            if date.today() <= d:
-                return "True"
 
-            return "License is expired"
+    try:
+        for i in keys:
+            #Check if key machineID is similar enough to received machineID. Accept it if it is.
+            #I only check for similarity instead of congruency because a person may change a part of their machine.
+            key = i.checkSimilar(machineID)
+            if key:
+                d = createDateTime(i.owner.expiryDate)
+                #Save ip
+                i.lastIP = ip
+                #Save last access
+                i.lastAccess = datetime.now()
+                #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
+                i.accessAmount += 1
+                db.session.commit()
+                #Check for expiry
+                if date.today() <= d:
+                    return "True"
 
-    return "Machine not verified"
+                return "License is expired"
+
+        return "Machine not verified"
+    except Exception as e:
+        log = Logger(timestamp=datetime.now(),error="VerficationError: " + str(e))
+        db.session.add(log)
+        db.session.commit()
+        return "Error"
 
 
 #Setup the key
@@ -813,7 +820,7 @@ def setupkey():
 
     #Get the license that is refered to in post request
     l = License.query.get(getKey)
-
+    
     if l:
         #Set info in first available key
         for key in l.keys:
@@ -833,6 +840,7 @@ def setupkey():
         return "No keys available"
 
     return "License not found"
+
 
 if __name__ == '__main__':
     app.run(debug=True)

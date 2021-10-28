@@ -20,3 +20,14 @@ body {
     color: #333;
     background-color: #fff;
 }
+
+.btn {
+    background-color: white;
+}
+.btn:hover{
+    background-color: whitesmoke;
+}
+
+.item>form{
+    margin-left: 0.75%;
+}
