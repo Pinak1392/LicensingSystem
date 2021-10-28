@@ -42,6 +42,7 @@
 
     <script>
         $(".loadMore").click(function(){
+            $(this).text("Loading");
             $(".content").load("{{ url_for('manageUser', email=selectedUser.email) + '?items=' + (items + 50)|string}}" + " .content",
             function () {
             $(".content").html($(".content > .content").html());

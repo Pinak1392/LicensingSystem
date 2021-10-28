@@ -17,8 +17,10 @@
       {% for i in users %}
           {% if loop.index != items %}
           <div class="item">
-            <li> {% if i.superadmin %}<b style="color: blue;">SUPERADMIN</b>&nbsp;{% endif %} {% if i.admin and not i.superadmin %}<b style="color: red;">ADMIN</b>&nbsp;{% endif %}  <b>Name:</b> {{ i.name }}  &nbsp;&nbsp; <b>Email:</b> {{ i.email }}  &nbsp;&nbsp; <b>Licenses:</b> {{ i.licenses|length }}  &nbsp;&nbsp; <b>Active:</b> {{ i.active }}</li>
-            <form  method="POST" action="{{ url_for('users') }}">
+            <li><button class="btn" data-toggle="collapse" data-target="#{{ loop.index }}Options">
+              {% if i.superadmin %}<b style="color: blue;">SUPERADMIN</b>&nbsp;{% endif %} {% if i.admin and not i.superadmin %}<b style="color: red;">ADMIN</b>&nbsp;{% endif %}  <b>Name:</b> {{ i.name }}  &nbsp;&nbsp; <b>Email:</b> {{ i.email }}  &nbsp;&nbsp; <b>Licenses:</b> {{ i.licenses|length }}  &nbsp;&nbsp; <b>Active:</b> {{ i.active }}
+            </button></li>
+            <form  method="POST" action="{{ url_for('users') }}" id="{{ loop.index }}Options" class="collapse">
               <input id="User" name="User" type="hidden" value="{{ i.email }}">
               <input type="submit" name="View" value="View">
               {% if not i.admin or user.superadmin %}<input type="submit" name="Change" value="Change">{% endif %}
@@ -34,6 +36,7 @@
     
     <script>
       $(".loadMore").click(function(){
+        $(this).text("Loading");
         $(".content").load("{{ url_for('users') + '?items=' + (items + 50)|string}}" + " .content",
         function () {
           $(".content").html($(".content > .content").html());

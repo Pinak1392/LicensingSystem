@@ -17,7 +17,7 @@
       <a style="color: white;" href="{{ url_for('home') }}" class="navbar-header"><h1>Logo</h1></a>
       <ul class="navcontentcontainer nav navbar-nav" style="float: right; margin-top: 1%;">
         {% if user and user.is_authenticated %}
-          <li><h3 style="color: white; margin-left: -4%; margin-top: 10%; width: 100%;">Hello {{ user.name }}</h3></li>
+          <li class="navbar-brand" style="color: white;">Hello {{ user.name }}</h3></li>
   
           {% if user.admin %}
             <li><a href="{{ url_for('users') }}">Users</a></li>

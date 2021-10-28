@@ -103,8 +103,10 @@ class Key(db.Model):
     machineId = db.Column(db.String(200), default='')
     alias = db.Column(db.String(80), default='')
     inUse = db.Column(db.Boolean, default=False)
+    
     #License backreference
     owner_id = db.Column(db.String(80), db.ForeignKey('license.getKey', onupdate="cascade"), nullable=False)
+
     lastAccess = db.Column(db.DateTime)
     lastIP = db.Column(db.String(16))
     accessAmount = db.Column(db.Integer, default=0)
@@ -136,3 +138,8 @@ class Key(db.Model):
         self.machineId = ':'.join(m)
         db.session.commit()
         return True
+
+
+class Logger(db.Model):
+    timestamp = db.Column(db.DateTime, primary_key=True)
+    error = db.Column(db.String(200))
