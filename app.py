@@ -117,6 +117,22 @@ def is_safe_url(target):
 #     routes[func.__name__] = func
 #     return func
 
+#Error logging decorator
+def logger(func):
+
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        try:
+            return func(*args,**kwargs)
+        except Exception as e:
+            log = Logger(timestamp=datetime.now(), error= func.__name__ +  ": " + str(e))
+            db.session.add(log)
+            db.session.commit()
+            return e
+        
+    return decorated
+
+
 # A wrapper that tags a route as one that requires reverification
 def keepfresh(func):
     func.keepfresh = True
@@ -202,12 +218,14 @@ def nosleep():
 #The homepage route
 @app.route('/home', methods=['GET'])
 @app.route("/", methods=['GET'])
+@logger
 def home():
     return render_template("homepage.html", user=current_user)
 
 
 #Login route
 @app.route("/login", methods=["GET", "POST"])
+@logger
 def login():
     form = LoginForm()
 
@@ -265,6 +283,7 @@ def login():
 
 #The registration page
 @app.route("/register", methods=["GET", "POST"])
+@logger
 def register():
     #The registration form
     form = RegisterForm()
@@ -310,6 +329,7 @@ def register():
 
 #The endpoint in charge of changing user info
 @app.route("/change", methods=["GET", "POST"])
+@logger
 #Added keep fresh and fresh login required decorators to signal a reverification check
 @fresh_login_required
 @keepfresh
@@ -351,6 +371,7 @@ def change():
 
 #The endpoint in charge of admins changing user info
 @app.route("/adminchange/<email>", methods=["GET", "POST"])
+@logger
 @admin
 def adminchange(email):
     form = ChangeForm()
@@ -401,6 +422,7 @@ def adminchange(email):
 
 #Simple logout route
 @app.route("/logout", methods=["GET"])
+@logger
 @login_required
 def logout():
     user = current_user
@@ -414,6 +436,7 @@ def logout():
 
 #Email verification route
 @app.route("/verifyEmail", methods=["GET"])
+@logger
 def verifyEmail():
     #Get user from session email
     user = User.query.filter_by(email=session['email']).first()
@@ -428,6 +451,7 @@ def verifyEmail():
 
 #Currently just a form which allows the creation of licenses with no payment
 @app.route("/purchase", methods=["GET", "POST"])
+@logger
 #This is a decorator which requires a logged in account
 @login_required
 def purchase():
@@ -453,6 +477,7 @@ def purchase():
 
 #Renews a license
 @app.route("/renew/<getKey>", methods=["GET", "POST"])
+@logger
 @login_required
 def renew(getKey):
     #Gets license
@@ -507,6 +532,7 @@ def renew(getKey):
 
 #View all your licenses
 @app.route("/viewLicense", methods=["GET", "POST"])
+@logger
 @login_required
 def viewLicense():
     
@@ -547,6 +573,7 @@ def viewLicense():
 
 #This endpoint activates the user
 @app.route('/activate/<userKey>')
+@logger
 def activate(userKey):
     user = User.query.filter_by(userKey = userKey).first()
     
@@ -573,6 +600,7 @@ def activate(userKey):
 
 #Change password endpoint
 @app.route('/forgot/<userKey>', methods=["GET", "POST"])
+@logger
 @keepfresh
 #Requires a user key variable from the endpoint
 def forgot(userKey):
@@ -603,6 +631,7 @@ def forgot(userKey):
 
 #View all users
 @app.route('/users', methods=["GET", "POST"])
+@logger
 @login_required
 #Requires user to be admin
 @admin
@@ -637,15 +666,17 @@ def users():
 
 
 #Defunct route, simply allows you to view all licenses. It isn't useful anymore, but it does still work.
-@app.route('/allLicenses')
+@app.route('/logs')
+@logger
 @login_required
 @admin
-def allLicenses():
-    return render_template("allLicenses.html", licenses = License.query.all(), user=current_user)
+def logs():
+    return render_template("logs.html", logs = Logger.query.all(), user=current_user)
 
 
 #User management
 @app.route('/manageUser/<email>', methods=['GET', 'POST'])
+@logger
 @login_required
 @admin
 def manageUser(email):
@@ -711,6 +742,7 @@ def manageUser(email):
 
 #Manage license
 @app.route('/manageLicense/<getKey>', methods=['GET', 'POST'])
+@logger
 @login_required
 def manageLicense(getKey):
     #Get license
@@ -764,6 +796,7 @@ def settings():
 
 #Verify license
 @app.route('/verify', methods=["POST"])
+@logger
 def verify():
     #Get machine info
     machineID = request.form.get("machineid")
@@ -776,36 +809,32 @@ def verify():
 
     keys = Key.query.all()
 
-    try:
-        for i in keys:
-            #Check if key machineID is similar enough to received machineID. Accept it if it is.
-            #I only check for similarity instead of congruency because a person may change a part of their machine.
-            key = i.checkSimilar(machineID)
-            if key:
-                d = createDateTime(i.owner.expiryDate)
-                #Save ip
-                i.lastIP = ip
-                #Save last access
-                i.lastAccess = datetime.now()
-                #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
-                i.accessAmount += 1
-                db.session.commit()
-                #Check for expiry
-                if date.today() <= d:
-                    return "True"
+    for i in keys:
+        #Check if key machineID is similar enough to received machineID. Accept it if it is.
+        #I only check for similarity instead of congruency because a person may change a part of their machine.
+        key = i.checkSimilar(machineID)
+        if key:
+            d = createDateTime(i.owner.expiryDate)
+            #Save ip
+            i.lastIP = ip
+            #Save last access
+            i.lastAccess = datetime.now()
+            #Increment access amount (Not the most useful parameter due to vayu accessing server multiple times per use)
+            i.accessAmount += 1
+            db.session.commit()
+            #Check for expiry
+            if date.today() <= d:
+                return "True"
 
-                return "License is expired"
+            return "License is expired"
 
-        return "Machine not verified"
-    except Exception as e:
-        log = Logger(timestamp=datetime.now(),error="VerficationError: " + str(e))
-        db.session.add(log)
-        db.session.commit()
-        return "Error"
+    return "Machine not verified"
+
 
 
 #Setup the key
 @app.route('/setupkey', methods=["POST"])
+@logger
 def setupkey():
     machineId = request.form.get("machineid")
     getKey = request.form.get("regkey")

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Logs{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    {% for i in logs %}
+      <li><b>timestamp:</b> {{ i.timestamp|string }}  &nbsp;&nbsp; <b>Error:</b> {{ i.error }}</li>
+    {% endfor %}
+{% endblock %}

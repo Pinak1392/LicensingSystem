@@ -108,14 +108,17 @@ class Key(db.Model):
     owner_id = db.Column(db.String(80), db.ForeignKey('license.getKey', onupdate="cascade"), nullable=False)
 
     lastAccess = db.Column(db.DateTime)
-    lastIP = db.Column(db.String(16))
+    lastIP = db.Column(db.String(16), default='')
     accessAmount = db.Column(db.Integer, default=0)
 
     #Reset back to default
     def reset(self):
         self.inUse = False
         self.machineId = ''
-        self.alias = None
+        self.alias = ''
+        self.lastAccess = None
+        self.lastIP = ''
+        self.accessAmount = 0
 
     #Checks if machineID is similar enough
     def checkSimilar(self, s):

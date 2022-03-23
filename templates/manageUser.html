@@ -25,11 +25,11 @@
         <li>{{ loop.index }}. &nbsp;<b>Get Key:</b> {{ i.getKey }}  &nbsp;&nbsp; <b>Keys:</b> {{ i.keys|length }}  &nbsp;&nbsp; <b>Expires on:</b> <span class='localtime'>{{ i.expiryDate }}</span></li>
         <form  method="POST" action="{{ url_for('manageUser', email=selectedUser.email) }}">
             <input id="License" name="License" type="hidden" value="{{ i.getKey }}">
-            <input type="submit" name="Remove" value="Remove">
             <input type="submit" name="View" value="View">
             <input type="submit" name="Renew" value="Renew">
             <input type="submit" name="Reset registration key" value="Reset registration key">
             <input type="submit" name="Reset all keys" value="Reset all keys">
+            <input type="submit" name="Remove" value="Remove">
         </form>
         </div>
         {% endif %}

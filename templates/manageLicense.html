@@ -35,10 +35,10 @@
         <li>{{ loop.index }}. &nbsp;<b>Owner:</b> {{ i.alias }}  &nbsp;&nbsp; <b>In use:</b> {{ i.inUse }} &nbsp;&nbsp; <b>Access amount:</b> {{ i.accessAmount }}  &nbsp;&nbsp; <b>Last access:</b> {% if i.lastAccess %}<span class='localtime'>{{ i.lastAccess.replace(microsecond=0) }}</span>   &nbsp;&nbsp;{% endif %} <b>IP:</b> {{ i.lastIP }}</li>
         <form  method="POST" action="{{ url_for('manageLicense', getKey=selectedLicense.getKey) }}">
             <input id="Key" name="Key" type="hidden" value="{{ i.id }}">
+            <input type="submit" name="Reset" value="Reset">
             {% if user.admin %}
                 <input type="submit" name="Remove" value="Remove">
             {% endif %}
-            <input type="submit" name="Reset" value="Reset">
         </form>
         </div>
         {% endif %}
